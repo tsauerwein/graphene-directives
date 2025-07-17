@@ -379,7 +379,8 @@ class Schema(GrapheneSchema):
                 % (entity_type_name, entity_name, re.escape(str_fields_original))
             )
             string_schema = pattern.sub(
-                r"\g<1> {\n%s\n}" % str_fields_annotated, string_schema
+                r"\g<1> {\n%s\n}" % str_fields_annotated.replace("\\", "\\\\"),
+                string_schema,
             )
         return string_schema
 
