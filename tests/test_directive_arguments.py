@@ -4,7 +4,12 @@ import graphene
 import pytest
 from graphql import GraphQLArgument, GraphQLInt, GraphQLNonNull, GraphQLString
 
-from graphene_directives import CustomDirective, DirectiveLocation, directive
+from graphene_directives import (
+    CustomDirective,
+    DirectiveLocation,
+    directive,
+    build_schema,
+)
 from graphene_directives.exceptions import DirectiveInvalidArgValueTypeError
 
 curr_dir = Path(__file__).parent
@@ -45,6 +50,28 @@ DbCacheDirective = CustomDirective(
         ),
     },
     description="Caching directive to control cache behavior of fields or fragments.",
+)
+
+
+class Position(graphene.ObjectType):
+    x = graphene.Int(required=True)
+    y = graphene.Int(required=True)
+
+
+class QueryWithDirective(graphene.ObjectType):
+    position = directive(CacheDirective, field=graphene.Field(Position), max_age=300)
+
+    question = graphene.Field(
+        graphene.String, form_id=graphene.Int(required=True), description="A question"
+    )
+
+    score = graphene.Field(
+        graphene.Int, form_id=graphene.Int(required=True), description="A score"
+    )
+
+
+schema_with_directive = build_schema(
+    query=QueryWithDirective, directives=(CacheDirective,)
 )
 
 
@@ -90,3 +117,11 @@ def test_input_default_argument_on_field() -> None:
                 deprecation_reason="This field is deprecated and will be removed in future",
             ),
         )
+
+
+def test_generate_schema_with_arguments() -> None:
+    """Test that argument names are converted to camel-case."""
+    with open(
+        f"{curr_dir}/schema_files/test_directive_arguments_camel_case.graphql"
+    ) as f:
+        assert str(schema_with_directive) == f.read()
